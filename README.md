@@ -1,14 +1,15 @@
+## About Lumenstan
+
+Lumenstan is a fork of [Larastan](https://github.com/larastan/larastan) specifically to maintain compatibility with [Lumen](https://github.com/laravel/lumen-framework). While the Lumen framework is no longer actively supported by the Laravel team, this fork is for those updating and maintaining Lumen projects already in the field.
+
 <p align="center">
-    <img src="https://raw.githubusercontent.com/larastan/larastan/master/docs/logo.png" alt="Larastan Logo" width="300">
+    <img src="https://raw.githubusercontent.com/prettyyellowdog/lumenstan/main/docs/logo.png" alt="Larastan Logo" width="300">
     <br><br>
-    <img src="https://raw.githubusercontent.com/larastan/larastan/master/docs/example.png" alt="Larastan Example" height="300">
+    <img src="https://raw.githubusercontent.com/prettyyellowdog/lumenstan/main/docs/example.png" alt="Larastan Example" height="300">
 </p>
 
 <p align="center">
-  <a href="https://github.com/larastan/larastan/actions"><img src="https://github.com/larastan/larastan/actions/workflows/tests.yml/badge.svg" alt="Build Status"></a>
-  <a href="https://packagist.org/packages/larastan/larastan/stats"><img src="https://poser.pugx.org/larastan/larastan/d/total.svg" alt="Total Downloads"></a>
-  <a href="https://packagist.org/packages/larastan/larastan"><img src="https://poser.pugx.org/larastan/larastan/v/stable.svg" alt="Latest Version"></a>
-  <a href="https://github.com/larastan/larastan/blob/master/LICENSE.md"><img src="https://poser.pugx.org/larastan/larastan/license.svg" alt="License"></a>
+  <a href="https://github.com/prettyyellowdog/lumenstan/blob/main/LICENSE.md">License</a>
 </p>
 
 ------
@@ -39,7 +40,7 @@ Larastan was created by [Can Vural](https://github.com/canvural) and [Nuno Madur
 **1**: First, you may use [Composer](https://getcomposer.org) to install Larastan as a development dependency into your Laravel project:
 
 ```bash
-composer require --dev "larastan/larastan:^3.0"
+composer require --dev "prettyyellowdog/lumenstan:^3.0"
 ```
 
 > Using Larastan for analysing Laravel packages? You may need to install `orchestra/testbench`.

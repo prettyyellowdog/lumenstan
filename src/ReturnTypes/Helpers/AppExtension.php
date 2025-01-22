@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Larastan\Larastan\ReturnTypes\Helpers;
 
-use Illuminate\Foundation\Application;
+use Laravel\Lumen\Application;
 use Larastan\Larastan\ReturnTypes\AppMakeHelper;
 use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;

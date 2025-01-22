@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Larastan\Larastan\ReturnTypes;
 
-use Illuminate\Foundation\Application;
+use Laravel\Lumen\Application;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\MethodReflection;

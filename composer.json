@@ -1,10 +1,14 @@
 {
-    "name": "larastan/larastan",
+    "name": "prettyyellowdog/lumenstan",
     "type": "phpstan-extension",
-    "description": "Larastan - Discover bugs in your code without running it. A phpstan/phpstan wrapper for Laravel",
-    "keywords": ["laravel", "larastan", "phpstan", "php", "package", "static analysis", "code analysis", "code analyse"],
+    "description": "Lumenstan - Discover bugs in your code without running it. A phpstan/phpstan wrapper for Lumen based on Larastan",
+    "keywords": ["laravel", "lumen", "lumenstan","larastan", "phpstan", "php", "package", "static analysis", "code analysis", "code analyse"],
     "license": "MIT",
     "authors": [
+        {
+            "name": "Bill Jones",
+            "homepage": "https://github.com/prettyyellowdog"
+        },
         {
             "name": "Can Vural",
             "email": "can9119@gmail.com"
