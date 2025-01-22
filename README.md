@@ -3,13 +3,13 @@
 Lumenstan is a fork of [Larastan](https://github.com/larastan/larastan) specifically to maintain compatibility with [Lumen](https://github.com/laravel/lumen-framework). While the Lumen framework is no longer actively supported by the Laravel team, this fork is for those updating and maintaining Lumen projects already in the field.
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/prettyyellowdog/lumenstan/main/docs/logo.png" alt="Larastan Logo" width="300">
+    <img src="https://raw.githubusercontent.com/larastan/larastan/master/docs/logo.png" alt="Larastan Logo" width="300">
     <br><br>
-    <img src="https://raw.githubusercontent.com/prettyyellowdog/lumenstan/main/docs/example.png" alt="Larastan Example" height="300">
+    <img src="https://raw.githubusercontent.com/larastan/larastan/master/docs/example.png" alt="Larastan Example" height="300">
 </p>
 
 <p align="center">
-  <a href="https://github.com/prettyyellowdog/lumenstan/blob/main/LICENSE.md">License</a>
+  <a href="https://github.com/larastan/larastan/blob/master/LICENSE.md"><img src="https://poser.pugx.org/larastan/larastan/license.svg" alt="License"></a>
 </p>
 
 ------
