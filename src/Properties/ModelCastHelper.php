@@ -36,6 +36,7 @@ use PHPStan\Type\FloatType;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
@@ -78,7 +79,10 @@ class ModelCastHelper
             'date', 'datetime' => $this->getDateType(),
             'immutable_date', 'immutable_datetime' => new ObjectType(CarbonImmutable::class),
             AsArrayObject::class, AsEncryptedArrayObject::class => new ObjectType(ArrayObject::class),
-            AsCollection::class, AsEncryptedCollection::class => new GenericObjectType(Collection::class, [new BenevolentUnionType([new IntegerType(), new StringType()]), new MixedType()]),
+            AsCollection::class, AsEncryptedCollection::class => new BenevolentUnionType([
+                new GenericObjectType(Collection::class, [new BenevolentUnionType([new IntegerType(), new StringType()]), new MixedType()]),
+                new NullType(),
+            ]),
             AsStringable::class => new ObjectType(IlluminateStringable::class),
             default => null,
         };
@@ -97,7 +101,7 @@ class ModelCastHelper
             return new ObjectType($cast);
         }
 
-        if ($classReflection->isSubclassOf(Castable::class)) {
+        if ($classReflection->is(Castable::class)) {
             $methodReflection = $classReflection->getNativeMethod('castUsing');
             $castUsingReturn  = $methodReflection->getVariants()[0]->getReturnType();
 
@@ -106,13 +110,13 @@ class ModelCastHelper
             }
         }
 
-        if ($classReflection->isSubclassOf(CastsAttributes::class)) {
+        if ($classReflection->is(CastsAttributes::class)) {
             $methodReflection = $classReflection->getNativeMethod('get');
 
             return $methodReflection->getVariants()[0]->getReturnType();
         }
 
-        if ($classReflection->isSubclassOf(CastsInboundAttributes::class)) {
+        if ($classReflection->is(CastsInboundAttributes::class)) {
             return $originalType;
         }
 
@@ -154,7 +158,7 @@ class ModelCastHelper
             return new ObjectType($cast);
         }
 
-        if ($classReflection->isSubclassOf(Castable::class)) {
+        if ($classReflection->is(Castable::class)) {
             $methodReflection = $classReflection->getNativeMethod('castUsing');
             $castUsingReturn  = $methodReflection->getVariants()[0]->getReturnType();
 
@@ -164,8 +168,8 @@ class ModelCastHelper
         }
 
         if (
-            $classReflection->isSubclassOf(CastsAttributes::class)
-            || $classReflection->isSubclassOf(CastsInboundAttributes::class)
+            $classReflection->is(CastsAttributes::class)
+            || $classReflection->is(CastsInboundAttributes::class)
         ) {
             $methodReflection = $classReflection->getNativeMethod('set');
             $parameters       = $methodReflection->getVariants()[0]->getParameters();
@@ -187,7 +191,7 @@ class ModelCastHelper
             : IlluminateCarbon::class;
 
         if ($dateClass === IlluminateCarbon::class) {
-            return TypeCombinator::union(new ObjectType($dateClass), new ObjectType(Carbon::class));
+            return new ObjectType(Carbon::class);
         }
 
         return new ObjectType($dateClass);

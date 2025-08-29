@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Larastan\Larastan\Methods;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
 use Larastan\Larastan\Reflection\AnnotationScopeMethodParameterReflection;
 use Larastan\Larastan\Reflection\DynamicWhereParameterReflection;
 use Larastan\Larastan\Reflection\EloquentBuilderMethodReflection;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Name;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\MissingMethodFromReflectionException;
@@ -23,10 +26,12 @@ use PHPStan\Type\VerbosityLevel;
 use function array_key_exists;
 use function array_shift;
 use function count;
+use function defined;
 use function in_array;
 use function preg_split;
 use function substr;
 use function ucfirst;
+use function version_compare;
 
 use const PREG_SPLIT_DELIM_CAPTURE;
 
@@ -71,6 +76,13 @@ class BuilderHelper
         private bool $checkProperties,
         private MacroMethodsClassReflectionExtension $macroMethodsClassReflectionExtension,
     ) {
+        // @phpstan-ignore-next-line
+        if (! defined('LARAVEL_VERSION') || version_compare(LARAVEL_VERSION, '12.15.0', '<')) {
+            return;
+        }
+
+        // @phpstan-ignore-next-line
+        $this->passthru[] = 'getCountForPagination';
     }
 
     public function dynamicWhere(
@@ -112,8 +124,6 @@ class BuilderHelper
 
         $classReflection = $this->reflectionProvider->getClass(QueryBuilder::class);
 
-        $methodReflection = $classReflection->getNativeMethod('dynamicWhere');
-
         return new EloquentBuilderMethodReflection(
             $methodName,
             $classReflection,
@@ -143,6 +153,38 @@ class BuilderHelper
         $scopeName = 'scope' . ucfirst($methodName);
 
         foreach ($modelType->getObjectClassReflections() as $reflection) {
+            // Check for Scope attribute
+            if ($reflection->hasNativeMethod($methodName)) {
+                $methodReflection  = $reflection->getNativeMethod($methodName);
+                $hasScopeAttribute = false;
+                foreach ($methodReflection->getAttributes() as $attribute) {
+                    // using string instead of class constant to avoid failing on older Laravel versions
+                    if ($attribute->getName() === 'Illuminate\Database\Eloquent\Attributes\Scope') {
+                        $hasScopeAttribute = true;
+                        break;
+                    }
+                }
+
+                if (! $methodReflection->isPublic() && $hasScopeAttribute) {
+                    $parametersAcceptor = $methodReflection->getVariants()[0];
+
+                    $parameters = $parametersAcceptor->getParameters();
+                    // We shift the parameters,
+                    // because first parameter is the Builder
+                    array_shift($parameters);
+
+                    $returnType = $parametersAcceptor->getReturnType();
+
+                    return new EloquentBuilderMethodReflection(
+                        $methodName,
+                        $methodReflection->getDeclaringClass(),
+                        $parameters,
+                        $returnType,
+                        $parametersAcceptor->isVariadic(),
+                    );
+                }
+            }
+
             // Check for @method phpdoc tags
             if (array_key_exists($scopeName, $reflection->getMethodTags())) {
                 $methodTag = $reflection->getMethodTags()[$scopeName];
@@ -216,7 +258,20 @@ class BuilderHelper
      */
     public function determineBuilderName(string $modelClassName): string
     {
-        $method = $this->reflectionProvider->getClass($modelClassName)->getNativeMethod('newEloquentBuilder');
+        $modelReflection = $this->reflectionProvider->getClass($modelClassName);
+        $method          = $modelReflection->getNativeMethod('newEloquentBuilder');
+
+        if ($method->getDeclaringClass()->getName() === Model::class) {
+            $attrs = $modelReflection->getNativeReflection()->getAttributes('Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder'); //@phpstan-ignore argument.type (Attribute class might not exist)
+
+            if ($attrs !== []) {
+                $expr =  $attrs[0]->getArgumentsExpressions()[0];
+
+                if ($expr instanceof ClassConstFetch && $expr->class instanceof Name) {
+                    return $expr->class->toString();
+                }
+            }
+        }
 
         $returnType = $method->getVariants()[0]->getReturnType();
 

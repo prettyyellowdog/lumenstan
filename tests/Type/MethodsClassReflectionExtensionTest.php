@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Type;
 
 use PHPStan\Testing\TypeInferenceTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use function version_compare;
 
@@ -18,14 +19,14 @@ class MethodsClassReflectionExtensionTest extends TypeInferenceTestCase
         yield from self::gatherAssertTypes(__DIR__ . '/data/macros.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/redirect-response.php');
 
-        if (! version_compare(PHP_VERSION, '8.1.0', '>=') || ! version_compare(PHP_VERSION, '8.2.0', '<')) {
+        if (! version_compare(PHP_VERSION, '8.1.0', '>=')) {
             return;
         }
 
         yield from self::gatherAssertTypes(__DIR__ . '/data/macros-php-81.php');
     }
 
-    /** @dataProvider dataFileAsserts */
+    #[DataProvider('dataFileAsserts')]
     public function testFileAsserts(
         string $assertType,
         string $file,
@@ -37,6 +38,6 @@ class MethodsClassReflectionExtensionTest extends TypeInferenceTestCase
     /** @return string[] */
     public static function getAdditionalConfigFiles(): array
     {
-        return [__DIR__ . '/../../extension.neon'];
+        return [__DIR__ . '/../phpstan-tests.neon'];
     }
 }

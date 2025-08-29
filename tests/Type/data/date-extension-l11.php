@@ -19,10 +19,8 @@ function test(mixed $date): void
     assertType('Illuminate\Support\Carbon', Date::fromSerialized($date));
     assertType('Illuminate\Support\Carbon|null', Date::getTestNow());
     assertType('Illuminate\Support\Carbon', Date::instance($date));
-    assertType('Illuminate\Support\Carbon', Date::maxValue());
-    assertType('Illuminate\Support\Carbon', Date::minValue());
     assertType('Illuminate\Support\Carbon', Date::now());
-    assertType('Illuminate\Support\Carbon', Date::parse());
+    assertType('Illuminate\Support\Carbon', Date::parse('12:00'));
     assertType('Illuminate\Support\Carbon', Date::today());
     assertType('Illuminate\Support\Carbon', Date::tomorrow());
     assertType('Illuminate\Support\Carbon', Date::yesterday());

@@ -17,6 +17,11 @@ use function count;
 
 class AppEnvironmentReturnTypeExtension implements DynamicMethodReturnTypeExtension
 {
+    /** @param class-string $class */
+    public function __construct(private string $class)
+    {
+    }
+
     public function getClass(): string
     {
         return Application::class;

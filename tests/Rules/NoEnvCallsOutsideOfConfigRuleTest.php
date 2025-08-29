@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Larastan\Larastan\Rules\NoEnvCallsOutsideOfConfigRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /** @extends RuleTestCase<NoEnvCallsOutsideOfConfigRule> */
 class NoEnvCallsOutsideOfConfigRuleTest extends RuleTestCase
@@ -19,22 +20,70 @@ class NoEnvCallsOutsideOfConfigRuleTest extends RuleTestCase
 
     protected function getRule(): Rule
     {
-        return new NoEnvCallsOutsideOfConfigRule();
+        return new NoEnvCallsOutsideOfConfigRule([
+            __DIR__ . '/data/config',
+            __DIR__ . '/data/module/*/config',
+        ], $this->getFileHelper());
     }
 
-    /** @test */
+    #[Test]
     public function itDoesNotFailForEnvCallsInsideConfigDirectory(): void
     {
         $this->analyse([__DIR__ . '/data/config/env-calls.php'], []);
     }
 
-    /** @test */
+    #[Test]
+    public function itDoesNotFailForEnvCallsInsideGlobConfigDirectory(): void
+    {
+        $this->analyse([__DIR__ . '/data/module/foo/config/env-calls.php', __DIR__ . '/data/module/bar/config/env-calls.php'], []);
+    }
+
+    #[Test]
     public function itReportsEnvCallsOutsideOfConfigDirectory(): void
     {
         $this->analyse([__DIR__ . '/data/env-calls.php'], [
             ["Called 'env' outside of the config directory which returns null when the config is cached, use 'config'.", 7],
             ["Called 'env' outside of the config directory which returns null when the config is cached, use 'config'.", 8],
         ]);
+    }
+
+    #[Test]
+    public function itDoesNotReportTraitFunctionsThatHaveBeenOverridden(): void
+    {
+        $this->analyse([
+            __DIR__ . '/data/EnvUsageClassOverride.php',
+            __DIR__ . '/data/EnvUsageTrait.php',
+        ], []);
+    }
+
+    #[Test]
+    public function itReportsEnvCallsInTraitRatherThanClass(): void
+    {
+        $actualErrors = $this->gatherAnalyserErrors([
+            __DIR__ . '/data/EnvUsageClass.php',
+            __DIR__ . '/data/EnvUsageTrait.php',
+        ]);
+
+        $this->assertCount(2, $actualErrors);
+        $this->assertSame(
+            "Called 'env' outside of the config directory which returns null when the config is cached, use 'config'.",
+            $actualErrors[0]->getMessage(),
+        );
+        $this->assertSame(
+            __DIR__ . '/data/EnvUsageTrait.php (in context of class Tests\Rules\Data\EnvUsageClass)',
+            $actualErrors[0]->getFile(),
+        );
+        $this->assertSame(17, $actualErrors[0]->getLine());
+
+        $this->assertSame(
+            "Called 'env' outside of the config directory which returns null when the config is cached, use 'config'.",
+            $actualErrors[1]->getMessage(),
+        );
+        $this->assertSame(
+            __DIR__ . '/data/EnvUsageTrait.php (in context of class Tests\Rules\Data\EnvUsageClass)',
+            $actualErrors[1]->getFile(),
+        );
+        $this->assertSame(18, $actualErrors[1]->getLine());
     }
 
     protected function overrideConfigPath(string $path): void

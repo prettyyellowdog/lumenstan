@@ -10,7 +10,14 @@ use Throwable;
 
 use function PHPStan\Testing\assertType;
 
-function test(?int $value = 0): void
+/**
+ * @param int|null     $value
+ * @param int|(\Closure(mixed): string) $intOrClosure
+ *
+ * @return void
+ * @throws Throwable
+ */
+function test(?int $value = 0, int|\Closure $intOrClosure = 0, int|\Closure $intOrClosureWithNoDocBlock = 0): void
 {
     assertType('Illuminate\Foundation\Application', app());
     assertType('Larastan\Larastan\ApplicationResolver', app(ApplicationResolver::class));
@@ -137,6 +144,8 @@ function test(?int $value = 0): void
     }));
 
     assertType('5', value(5));
+    assertType('int|string', value($intOrClosure));
+    assertType('mixed', value($intOrClosureWithNoDocBlock));
 
     assertType('array<mixed>|null', transform(User::first(), fn (User $user) => $user->toArray()));
     assertType('array<mixed>', transform(User::sole(), fn (User $user) => $user->toArray()));
@@ -169,9 +178,10 @@ function test(?int $value = 0): void
     }
 
     assertType('bool|string|null', env('foo'));
-    assertType('bool|string|null', env('foo', null));
-    assertType('120|bool|string', env('foo', 120));
-    assertType('bool|string', env('foo', ''));
+    assertType('bool|string|null', env('foo'));
+    assertType('int', env('foo', 120));
+    assertType('string', env('foo', ''));
+    assertType('int', env('foo', fn () => 120));
 
     assertType('true', literal(true));
     assertType('int<0, 10>', literal(random_int(0,10)));
@@ -183,4 +193,16 @@ function test(?int $value = 0): void
     assertType("object{0: 'bar', 1: 'foo'}&stdClass", literal('bar', 'foo'));
     assertType("object{0: 4, bar: 'foo'}&stdClass", literal(4, bar:'foo'));
     assertType("App\User", literal(new User()));
+    assertType("array{foo: 22, bar: 'bar'}", literal(['foo' => 22, 'bar' => "bar"]));
+    assertType("object{0: 5, 1: 7}&stdClass", literal(...[5,7]));
+    assertType("object{foo: 22, bar: 'bar'}&stdClass", literal(...['foo' => 22, 'bar' => "bar"]));
 }
+
+/**
+ * @param array{loo:'loo'}|array{foo:'foo',bar:'baa'} $parameter
+ */
+function testUnion($parameter): int {
+    assertType("(object{foo: 'foo', bar: 'baa'}&stdClass)|(object{loo: 'loo'}&stdClass)", literal(...$parameter));
+
+    return 0;
+};

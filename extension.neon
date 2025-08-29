@@ -15,14 +15,19 @@ parameters:
     noUnnecessaryCollectionCall: true
     noUnnecessaryCollectionCallOnly: []
     noUnnecessaryCollectionCallExcept: []
+    noUnnecessaryEnumerableToArrayCalls: false
     squashedMigrationsPath: []
     databaseMigrationsPath: []
     disableMigrationScan: false
     disableSchemaScan: false
+    configDirectories: []
     viewDirectories: []
     checkModelProperties: false
     checkUnusedViews: false
     checkModelAppends: true
+    generalizeEnvReturnType: false
+    checkConfigTypes: false
+    checkAuthCallsWhenInRequestScope: false
 
 parametersSchema:
     checkOctaneCompatibility: bool()
@@ -31,14 +36,19 @@ parametersSchema:
     noUnnecessaryCollectionCall: bool()
     noUnnecessaryCollectionCallOnly: listOf(string())
     noUnnecessaryCollectionCallExcept: listOf(string())
+    noUnnecessaryEnumerableToArrayCalls: bool()
     databaseMigrationsPath: listOf(string())
     disableMigrationScan: bool()
+    configDirectories: listOf(string())
     viewDirectories: listOf(string())
     squashedMigrationsPath: listOf(string())
     disableSchemaScan: bool()
     checkModelProperties: bool()
     checkUnusedViews: bool()
     checkModelAppends: bool()
+    generalizeEnvReturnType: bool()
+    checkConfigTypes: bool()
+    checkAuthCallsWhenInRequestScope: bool()
 
 conditionalTags:
     Larastan\Larastan\Rules\NoEnvCallsOutsideOfConfigRule:
@@ -47,12 +57,28 @@ conditionalTags:
         phpstan.rules.rule: %noModelMake%
     Larastan\Larastan\Rules\NoUnnecessaryCollectionCallRule:
         phpstan.rules.rule: %noUnnecessaryCollectionCall%
+    Larastan\Larastan\Rules\NoUnnecessaryEnumerableToArrayCallsRule:
+        phpstan.rules.rule: %noUnnecessaryEnumerableToArrayCalls%
     Larastan\Larastan\Rules\OctaneCompatibilityRule:
         phpstan.rules.rule: %checkOctaneCompatibility%
     Larastan\Larastan\Rules\UnusedViewsRule:
         phpstan.rules.rule: %checkUnusedViews%
     Larastan\Larastan\Rules\ModelAppendsRule:
         phpstan.rules.rule: %checkModelAppends%
+    Larastan\Larastan\Rules\NoAuthFacadeInRequestScopeRule:
+        phpstan.rules.rule: %checkAuthCallsWhenInRequestScope%
+    Larastan\Larastan\Rules\NoAuthHelperInRequestScopeRule:
+        phpstan.rules.rule: %checkAuthCallsWhenInRequestScope%
+    Larastan\Larastan\ReturnTypes\Helpers\EnvFunctionDynamicFunctionReturnTypeExtension:
+        phpstan.broker.dynamicFunctionReturnTypeExtension: %generalizeEnvReturnType%
+    Larastan\Larastan\ReturnTypes\Helpers\ConfigFunctionDynamicFunctionReturnTypeExtension:
+        phpstan.broker.dynamicFunctionReturnTypeExtension: %checkConfigTypes%
+    Larastan\Larastan\ReturnTypes\ConfigRepositoryDynamicMethodReturnTypeExtension:
+        phpstan.broker.dynamicMethodReturnTypeExtension: %checkConfigTypes%
+    Larastan\Larastan\ReturnTypes\ConfigFacadeCollectionDynamicStaticMethodReturnTypeExtension:
+        phpstan.broker.dynamicStaticMethodReturnTypeExtension: %checkConfigTypes%
+    Larastan\Larastan\Rules\ConfigCollectionRule:
+        phpstan.rules.rule: %checkConfigTypes%
 
 services:
     -
@@ -220,11 +246,6 @@ services:
             - phpstan.broker.dynamicMethodReturnTypeExtension
 
     -
-        class: Larastan\Larastan\ReturnTypes\RelationFindExtension
-        tags:
-            - phpstan.broker.dynamicMethodReturnTypeExtension
-
-    -
         class: Larastan\Larastan\ReturnTypes\RelationCollectionExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
@@ -271,8 +292,8 @@ services:
         class: Larastan\Larastan\ReturnTypes\Helpers\ValidatorExtension
         tags:
             - phpstan.broker.dynamicFunctionReturnTypeExtension
-    
-    -        
+
+    -
         class: Larastan\Larastan\ReturnTypes\Helpers\LiteralExtension
         tags:
             - phpstan.broker.dynamicFunctionReturnTypeExtension
@@ -288,11 +309,6 @@ services:
             - phpstan.broker.dynamicMethodReturnTypeExtension
 
     -
-        class: Larastan\Larastan\ReturnTypes\EnumerableGenericStaticMethodDynamicMethodReturnTypeExtension
-        tags:
-            - phpstan.broker.dynamicMethodReturnTypeExtension
-
-    -
         class: Larastan\Larastan\ReturnTypes\NewModelQueryDynamicMethodReturnTypeExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
@@ -301,11 +317,6 @@ services:
         class: Larastan\Larastan\ReturnTypes\FactoryDynamicMethodReturnTypeExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
-
-    -
-        class: Larastan\Larastan\ReturnTypes\EnumerableGenericStaticMethodDynamicStaticMethodReturnTypeExtension
-        tags:
-            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
 
     -
         class: Larastan\Larastan\Types\AbortIfFunctionTypeSpecifyingExtension
@@ -379,6 +390,8 @@ services:
 
     -
         class: Larastan\Larastan\Rules\NoEnvCallsOutsideOfConfigRule
+        arguments:
+            configDirectories: %configDirectories%
 
     -
         class: Larastan\Larastan\Rules\NoModelMakeRule
@@ -390,16 +403,34 @@ services:
             excludeMethods: %noUnnecessaryCollectionCallExcept%
 
     -
+        class: Larastan\Larastan\Rules\NoUnnecessaryEnumerableToArrayCallsRule
+
+    -
         class: Larastan\Larastan\Rules\ModelAppendsRule
 
     -
         class: Larastan\Larastan\Types\GenericEloquentBuilderTypeNodeResolverExtension
         tags:
             - phpstan.phpDoc.typeNodeResolverExtension
+
     -
         class: Larastan\Larastan\ReturnTypes\AppEnvironmentReturnTypeExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
+        arguments:
+            class: "Illuminate\\Foundation\\Application"
+
+    -
+        class: Larastan\Larastan\ReturnTypes\AppEnvironmentReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension
+        arguments:
+            class: "Illuminate\\Contracts\\Foundation\\Application"
+
+    -
+        class: Larastan\Larastan\ReturnTypes\AppFacadeEnvironmentReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
 
     -
         class: Larastan\Larastan\Types\ModelProperty\ModelPropertyTypeNodeResolverExtension
@@ -455,7 +486,7 @@ services:
             - phpstan.rules.rule
 
     -
-        class: Larastan\Larastan\Properties\Schema\PhpMyAdminDataTypeToPhpTypeConverter
+        class: Larastan\Larastan\Properties\Schema\MySqlDataTypeToPhpTypeConverter
 
     -
         class: Larastan\Larastan\LarastanStubFilesExtension
@@ -534,6 +565,11 @@ services:
             - phpstan.broker.dynamicMethodReturnTypeExtension
 
     -
+        class: Larastan\Larastan\ReturnTypes\LangGetReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+
+    -
         class: Larastan\Larastan\ReturnTypes\TransHelperReturnTypeExtension
         tags:
             - phpstan.broker.dynamicFunctionReturnTypeExtension
@@ -554,6 +590,41 @@ services:
 
     -
         class: Larastan\Larastan\Support\HigherOrderCollectionProxyHelper
+
+    -
+        class: Larastan\Larastan\ReturnTypes\Helpers\ConfigFunctionDynamicFunctionReturnTypeExtension
+
+    -
+        class: Larastan\Larastan\ReturnTypes\ConfigRepositoryDynamicMethodReturnTypeExtension
+
+    -
+        class: Larastan\Larastan\ReturnTypes\ConfigFacadeCollectionDynamicStaticMethodReturnTypeExtension
+
+    -
+        class: Larastan\Larastan\Support\ConfigParser
+        arguments:
+            parser: @currentPhpVersionSimpleDirectParser
+            configPaths: %configDirectories%
+
+    -
+        class: Larastan\Larastan\Internal\ConfigHelper
+
+    -
+        class: Larastan\Larastan\ReturnTypes\Helpers\EnvFunctionDynamicFunctionReturnTypeExtension
+
+    -
+        class: Larastan\Larastan\ReturnTypes\FormRequestSafeDynamicMethodReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension
+
+    -
+        class: Larastan\Larastan\Rules\NoAuthFacadeInRequestScopeRule
+
+    -
+        class: Larastan\Larastan\Rules\NoAuthHelperInRequestScopeRule
+
+    -
+        class: Larastan\Larastan\Rules\ConfigCollectionRule
 
 rules:
     - Larastan\Larastan\Rules\UselessConstructs\NoUselessWithFunctionCallsRule

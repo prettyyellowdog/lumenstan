@@ -1,6 +1,6 @@
 # Rules
 
-All rules that are specific to Laravel applications 
+All rules that are specific to Laravel applications
 are listed here with their configurable options.
 
 ## NoModelMake
@@ -9,7 +9,7 @@ Checks for calls to the static method `make()` on subclasses of `Illuminate\Data
 While its usage does not result in an error, unnecessary work is performed and the
 model is needlessly instantiated twice. Simply using `new` is more efficient.
 
-#### Examples
+### Examples
 
 ```php
 User::make()
@@ -21,26 +21,26 @@ Will result in the following error:
 Called 'Model::make()' which performs unnecessary work, use 'new Model()'.
 ```
 
-#### Configuration
+### Configuration
 
-This rule is enabled by default. To disable it completely, add:
+This rule is enabled by default.
+To disable, add the following to your `phpstan.neon` file:
 
 ```neon
 parameters:
     noModelMake: false
 ```
 
-to your `phpstan.neon` file.
-
 ## NoUnnecessaryCollectionCall
 
-Checks for method calls on instances of `Illuminate\Support\Collection` and their 
-subclasses. If the same result could have been determined 
+Checks for method calls on instances of `Illuminate\Support\Collection` and their
+subclasses. If the same result could have been determined
 directly with a query then this rule will produce an error.
-This rule exists to reduce unnecessarily heavy queries on the database 
+This rule exists to reduce unnecessarily heavy queries on the database
 and to prevent unneeded loops over Collections.
 
-#### Examples
+### Examples
+
 ```php
 User::all()->count();
 $user->roles()->pluck('name')->contains('a role name');
@@ -58,47 +58,86 @@ User::count();
 $user->roles()->where('name', 'a role name')->exists();
 ```
 
-#### Configuration
-This rule is enabled by default. To disable it completely, add:
-```
+### Configuration
+
+This rule is enabled by default.
+To disable, add the following to your `phpstan.neon` file:
+
+```neon
 parameters:
     noUnnecessaryCollectionCall: false
 ```
-to your `phpstan.neon` file.
 
 You can also configure the collection methods which this rule
 checks for. By default, all collection methods are checked.
 To only enable a specific set of methods, you could set the
 `noUnnecessaryCollectionCallOnly` configuration key. For example:
-```
+```neon
 parameters:
     noUnnecessaryCollectionCallOnly: ['count', 'first']
 ```
 will only throw errors on the `count` and `first` methods.
 The inverse is also configurable, to not throw an exception
 on the `contains` method, one could set the following value:
-```
+```neon
 parameters:
     noUnnecessaryCollectionCallExcept: ['contains']
+```
+
+## NoUnnecessaryEnumerableToArrayCalls
+
+This rule checks for unnecessary calls `Enumerable::toArray()` that
+could have used `all()` instead. The `toArray()` method recursively
+converts all Arrayable items in the Enumerable to an array and if
+none of the items are Arrayable, it is unnecessary map call.
+
+### Examples
+
+```php
+collect([1, 2, 3])->toArray();
+```
+
+Will result in the following error:
+
+```
+Called [toArray()] on an Enumerable which does not contain any Arrayables.
+```
+
+To fix the error, the code in the previous example could be changed to:
+
+```php
+collect([1, 2, 3])->all();
+```
+
+### Configuration
+
+This rule is disabled by default.
+To enable, add the following to your `phpstan.neon` file:
+
+```neon
+parameters:
+    noUnnecessaryEnumerableToArrayCalls: true
 ```
 
 ## ModelPropertyRule
 
 ---
 
-**NOTE**: This rule is currently in beta! If you want to improve it's analysis you can check out the issue [here](https://github.com/larastan/larastan/issues/676) and contribute!
+**NOTE**: This rule is currently in beta! If you want to improve its analysis, you can check out the issue [here](https://github.com/larastan/larastan/issues/676) and contribute!
 
 ---
 
 **default**: false
 
 ### Configuration
-This rule is disabled by default. You can enable it by putting
-```
+
+This rule is disabled by default.
+To enable, add the following to your `phpstan.neon` file:
+
+```neon
 parameters:
     checkModelProperties: true
 ```
-to your `phpstan.neon` file.
 
 This rule checks every argument of a method or a function, and if the argument has the type `model-property`, it will try to check the given value against the model properties. And if the model does not have the given property, it'll produce an error.
 
@@ -144,12 +183,13 @@ You can read more about why in [the official Octane docs](https://laravel.com/do
 
 ### Configuration
 
-This rule is disabled by default. You can enable it by adding
-```
+This rule is disabled by default.
+To enable, add the following to your `phpstan.neon` file:
+
+```neon
 parameters:
     checkOctaneCompatibility: true
 ```
-to your `phpstan.neon` file.
 
 ### Examples
 
@@ -200,35 +240,33 @@ Relation 'foo' is not found in App\Transaction model.
 
 This rule will check if your job dispatch argument types are compatible with the constructor of the job class.
 
-## Examples
+### Examples
 
-Given the following job:
+Assume the following job:
+
 ```php
-class ExampleJob implements ShouldQueue
+final class ExampleJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** @var int */
-    protected $foo;
-    
-    /** @var string */
-    protected $bar;
-    
-    public function __construct(int $foo, string $bar)
-    {
-        $this->foo = $foo;
-        $this->bar = $bar;
-    }
+    public function __construct(
+        protected int $foo,
+        protected string $bar,
+    ) {}
 
     // Rest of the job class
 }
 ```
-dispatching the job with the following examples
+
+Dispatching the job with the following examples:
+
 ```php
 ExampleJob::dispatch(1);
 ExampleJob::dispatch('bar', 1);
 ```
-will result in errors:
+
+will result in the following errors:
+
 ```
 Job class ExampleJob constructor invoked with 1 parameter in ExampleJob::dispatch(), 2 required.
 Parameter #1 $foo of job class ExampleJob constructor expects int in ExampleJob::dispatch(), string given.
@@ -237,11 +275,11 @@ Parameter #2 $bar of job class ExampleJob constructor expects string in ExampleJ
 
 ## NoUselessValueFunctionCallsRule
 
-This rule will check if unnecessary calls to the 'value()' function are made
+This rule will check if unnecessary calls to the `value()` function are made.
 
 ### Examples
 
-Calling the following functions;
+Calling the following functions:
 
 ```php
 $foo = value('foo');
@@ -257,18 +295,18 @@ Calling the helper function 'value()' without a closure as the first argument si
 
 ## NoUselessWithFunctionCallsRuleTest
 
-This rule will check if unnecessary calls to the 'with()' function are made
+This rule will check if unnecessary calls to the `with()` function are made.
 
 ### Examples
 
-Calling the following functions;
+Calling the following functions:
 
 ```php
 $foo = with('foo');
 $bar = with('bar', null);
 ```
 
-will result in errors;
+will result in errors:
 
 ```
 Calling the helper function 'with()' with only one argument simply returns the value itself. if you want to chain methods on a construct, use '(new ClassName())->foo()' instead
@@ -277,11 +315,11 @@ Calling the helper function 'with()' without a closure as the second argument si
 
 ## DeferrableServiceProviderMissingProvidesRule
 
-This rule will check for a missing 'provides' method in deferrable ServiceProviders.
+This rule will check for a missing `provides` method in deferrable `ServiceProvider`s.
 
 ### Examples
 
-A correct `DeferrableProvider` returns an array of `string`s or `class-string`s in the 'provides' method:
+A correct `DeferrableProvider` returns an `array` of `string`s or `class-string`s in the 'provides' method:
 
 ```php
 use Illuminate\Contracts\Support\DeferrableProvider;
@@ -290,7 +328,7 @@ use Illuminate\Support\ServiceProvider;
 class CorrectDeferrableProvider extends ServiceProvider implements DeferrableProvider
 {
     public function register() {}
-    
+
     public function provides(): array
     {
         return [
@@ -327,12 +365,13 @@ This rule will find any unused views in your application.
 
 ### Configuration
 
-This rule is disabled by default. You can enable it by adding
+This rule is disabled by default.
+To enable, add the following to your `phpstan.neon` file:
+
 ```neon
 parameters:
     checkUnusedViews: true
 ```
-to your `phpstan.neon` file.
 
 This rule analyzes your view files to find used views. By default, it checks the `resources/views` directory for Blade files. But if you have views in other directories you can use `viewDirectories` config option to specify them. For example:
 
@@ -360,37 +399,52 @@ parameters:
 
 ## NoEnvCallsOutsideOfConfig
 
-Checks for `env` calls out side of the config directory which returns null
-when the config is cached.
+Checks for `env` calls outside the `config` directory, which return `null` when the config is cached.
 
-#### Examples
+### Examples
+
+Suppose this calls happens somewhere in your code outside the `config` directory:
 
 ```php
-env(...);
+env('APP_ENV')
 ```
 
-Will result in the following error:
+It will result in the following error:
 
 ```
 Called 'env' outside of the config directory which returns null when the config is cached, use 'config'.")
 ```
 
-#### Configuration
+Use the corresponding configuration option instead:
 
-This rule is disabled by default. To enable, add:
+```php
+config('app.env')
+```
+
+### Configuration
+
+This rule is enabled by default.
+To disable, add the following to your `phpstan.neon` file:
 
 ```neon
 parameters:
-    noEnvCallsOutsideOfConfig: true
+    noEnvCallsOutsideOfConfig: false
 ```
 
-to your `phpstan.neon` file.
+By default, this rule checks for env calls outside the application config directory. If your configuration files are stored elsewhere, you can use the configDirectories option to specify them.
+
+```neon
+parameters:
+    configDirectories:
+        - src/config
+        - tests
+```
 
 ## ModelAppendsRule
 
 Checks model's `$appends` property for computed properties. The properties added to `$appends` array should both exist in the model and be computed properties.
 
-#### Examples
+### Examples
 
 ```php
 class User extends \Illuminate\Database\Eloquent\Model
@@ -405,13 +459,103 @@ Now if you were to call `toArray` or `toJson` methods on an instance of User cla
 Property 'email' is not a computed property, remove from $appends.
 ```
 
-#### Configuration
+### Configuration
 
-This rule is disabled by default. To enable, add:
+This rule is enabled by default.
+To disable, add the following to your `phpstan.neon` file:
 
 ```neon
 parameters:
-    checkModelAppends: true
+    checkModelAppends: false
 ```
 
-to your `phpstan.neon` file.
+## NoAuthFacadeInRequestScopeRule and NoAuthHelperInRequestScopeRule
+
+These rules will warn you if you are using `Auth::check()`, `Auth::user()`, `Auth::guest()`, `auth()->check()`, `auth()->user()`, or `auth()->guest()` while you have access to the request already in your current scope with `$request` variable. So it should only warn if there is a variable named `$request` in the current scope with `Illuminate\Http\Request` type (or any child class).
+
+### Examples
+
+```php
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class MyController
+{
+    public function __invoke(Request $request)
+    {
+        if (Auth::check()) {
+            //
+        }
+    }
+}
+```
+
+Will result in the following error:
+
+```
+Do not use Auth::check() in a class that has access to the request. Use $request->user() !== null instead.
+```
+
+You can fix this by using the `$request` variable directly:
+
+```php
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class MyController
+{
+    public function __invoke(Request $request)
+    {
+        if ($request->user() !== null) {
+            //
+        }
+    }
+}
+```
+
+### Configuration
+
+This rule is disabled by default.  To enable, add the following to your `phpstan.neon` file:
+
+```neon
+parameters:
+    checkAuthCallsWhenInRequestScope: true
+```
+
+## ConfigCollectionRule
+
+This rule checks for incorrect keys passed into the `Config::collection` method. It helps to prevent runtime errors when a configuration key that is not an array is used.
+
+### Examples
+
+Given a configuration file `config/foo.php` with the following content:
+```php
+return [
+    'foo' => 'bar',
+    'bar' => [1, 2, 3],
+];
+```
+
+The following code would produce an error:
+```php
+$collection = Config::collection('foo.foo');
+```
+
+```
+Config key 'foo.foo' is not an array.
+```
+
+To fix this, you should use a config key that returns an array:
+```php
+$collection = Config::collection('foo.bar');
+```
+
+### Configuration
+
+This rule is disabled by default. To enable, add the following to your `phpstan.neon` file:
+
+```neon
+parameters:
+    checkConfigTypes: true
+```
+

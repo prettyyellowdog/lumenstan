@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Type;
 
 use PHPStan\Testing\TypeInferenceTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-use function version_compare;
+use function Orchestra\Testbench\laravel_version_compare;
 
 class GeneralTypeTest extends TypeInferenceTestCase
 {
@@ -34,8 +35,13 @@ class GeneralTypeTest extends TypeInferenceTestCase
         yield from self::gatherAssertTypes(__DIR__ . '/data/custom-eloquent-builder.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/custom-eloquent-collection.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/database-transaction.php');
-        yield from self::gatherAssertTypes(__DIR__ . '/data/date-extension.php');
-        yield from self::gatherAssertTypes(__DIR__ . '/data/eloquent-builder.php');
+
+        if (laravel_version_compare('12.0.0', '>=')) {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/date-extension-l12.php');
+        } else {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/date-extension-l11.php');
+        }
+
         yield from self::gatherAssertTypes(__DIR__ . '/data/environment-helper.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/facades.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/form-request.php');
@@ -48,7 +54,6 @@ class GeneralTypeTest extends TypeInferenceTestCase
         yield from self::gatherAssertTypes(__DIR__ . '/data/model-properties.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/model-relations.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/model-scopes.php');
-        yield from self::gatherAssertTypes(__DIR__ . '/data/model.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/optional-helper.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/paginator-extension.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/query-builder.php');
@@ -66,8 +71,34 @@ class GeneralTypeTest extends TypeInferenceTestCase
         yield from self::gatherAssertTypes(__DIR__ . '/data/bug-1997.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/bug-1819.php');
 
-        if (version_compare(LARAVEL_VERSION, '11.28.0', '>=')) {
+        if (laravel_version_compare('11.28.0', '>=')) {
             yield from self::gatherAssertTypes(__DIR__ . '/data/model-collections-l11-28.php');
+        }
+
+        if (laravel_version_compare('11.42.0', '<')) {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/model.php');
+            yield from self::gatherAssertTypes(__DIR__ . '/data/eloquent-builder.php');
+        } else {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/model-l11-42.php');
+            yield from self::gatherAssertTypes(__DIR__ . '/data/eloquent-builder-l11-42.php');
+        }
+
+        if (laravel_version_compare('12.0.0', '>=')) {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/model-scope-attribute-l12.php');
+        }
+
+        if (laravel_version_compare('12.19.0', '>=')) {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/eloquent-builder-l12-19.php');
+        }
+
+        if (laravel_version_compare('12.15.0', '>=')) {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/passthru-l12-15.php');
+        } else {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/passthru.php');
+        }
+
+        if (laravel_version_compare('12.20.0', '>=')) {
+            yield from self::gatherAssertTypes(__DIR__ . '/data/facades-l12-20.php');
         }
 
         //##############################################################################################################
@@ -78,7 +109,7 @@ class GeneralTypeTest extends TypeInferenceTestCase
         yield from self::gatherAssertTypes(__DIR__ . '/../application/app/Console/Commands/FooCommand.php');
     }
 
-    /** @dataProvider dataFileAsserts */
+    #[DataProvider('dataFileAsserts')]
     public function testFileAsserts(
         string $assertType,
         string $file,

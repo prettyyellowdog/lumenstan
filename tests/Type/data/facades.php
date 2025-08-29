@@ -3,6 +3,7 @@
 namespace Facades;
 
 use App\DummyFacade;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -43,6 +44,7 @@ function test(): void
     assertType('bool', Storage::cloud()->deleteDirectory('foo'));
     assertType('string|false', Storage::putFile('foo', 'foo/bar'));
     assertType('mixed', Redis::get('foo'));
+    assertType('mixed', Redis::client());
 
     assertType('string', DummyFacade::foo());
     assertType('int', DummyFacade::bar());

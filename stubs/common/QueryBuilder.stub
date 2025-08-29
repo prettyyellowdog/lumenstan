@@ -40,7 +40,7 @@ class Builder
     /**
      * Add a "where" clause comparing two columns to the query.
      *
-     * @param  string|array<array-key, mixed>  $first
+     * @param  \Illuminate\Contracts\Database\Query\Expression|string|array<array-key, mixed>  $first
      * @param  string|null  $operator
      * @param  string|null  $second
      * @param  string|null  $boolean
@@ -139,25 +139,6 @@ class Builder
      * @return $this
      */
     public function havingBetween($column, array $values, $boolean = 'and', $not = false);
-
-    /**
-     * Add a union statement to the query.
-     *
-     * @template TModel of \Illuminate\Database\Eloquent\Model
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<TModel>|\Closure  $query
-     * @param  bool  $all
-     * @return $this
-     */
-    public function union($query, $all = false);
-
-    /**
-     * Add a union all statement to the query.
-     *
-     * @template TModel of \Illuminate\Database\Eloquent\Model
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<TModel>|\Closure  $query
-     * @return $this
-     */
-    public function unionAll($query);
 
     /**
      * Execute a query for a single record by ID.
@@ -312,4 +293,20 @@ class Builder
      * @throws \InvalidArgumentException
      */
     public function decrement($column, $amount = 1, array $extra = []);
+
+    /**
+     * Get the count of the total records for the paginator.
+     *
+     * @param  array<string|\Illuminate\Contracts\Database\Query\Expression>  $columns
+     * @return int<0, max>
+     */
+    public function getCountForPagination($columns = ['*']);
+
+    /**
+     * Retrieve the "count" result of the query.
+     *
+     * @param  \Illuminate\Contracts\Database\Query\Expression|string  $columns
+     * @return int<0, max>
+     */
+    public function count($columns = '*');
 }

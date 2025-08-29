@@ -22,7 +22,10 @@ class UnusedViewsRuleTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        $viewFileHelper = new ViewFileHelper([__DIR__ . '/../application/resources/views'], $this->getFileHelper());
+        $viewFileHelper = new ViewFileHelper([
+            __DIR__ . '/../application/resources/views',
+            __DIR__ . '/../../vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/views',
+        ], $this->getFileHelper());
 
         return new UnusedViewsRule(new UsedViewInAnotherViewCollector(
             $this->getContainer()->getService('currentPhpVersionSimpleDirectParser'),
@@ -40,14 +43,6 @@ class UnusedViewsRuleTest extends RuleTestCase
             new UsedViewFacadeMakeCollector(),
             new UsedRouteFacadeViewCollector(),
         ];
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // This is a workaround for a weird PHPStan container cache issue.
-        require __DIR__ . '/../../bootstrap.php';
     }
 
     public function testRule(): void

@@ -8,6 +8,7 @@ use PHPStan\Analyser\Analyser;
 use PHPStan\Analyser\Error;
 use PHPStan\File\FileHelper;
 use PHPStan\Testing\PHPStanTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Throwable;
 
 use function count;
@@ -16,15 +17,16 @@ use function sprintf;
 
 class IntegrationTest extends PHPStanTestCase
 {
-    /** @return iterable<mixed> */
+    /** @return iterable<array{0: string, 1?: array<int, array<int, string>>}> */
     public static function dataIntegrationTests(): iterable
     {
         self::getContainer();
 
         yield [__DIR__ . '/data/bug-2074.php'];
-        yield [__DIR__ . '/data/test-case-extension.php', [39 => ['Call to function method_exists() with $this(TestTestCase) and \'partialMock\' will always evaluate to true.']]];
+        yield [__DIR__ . '/data/test-case-extension.php', [34 => ['Call to function method_exists() with $this(TestTestCase) and \'partialMock\' will always evaluate to true.']]];
         yield [__DIR__ . '/data/model-builder.php'];
         yield [__DIR__ . '/data/model-properties.php'];
+        yield [__DIR__ . '/data/model-factories.php'];
         yield [__DIR__ . '/data/blade-view.php'];
         yield [__DIR__ . '/data/helpers.php'];
 
@@ -41,8 +43,8 @@ class IntegrationTest extends PHPStanTestCase
                 26 => ['Parameter #1 $column of method Illuminate\Database\Eloquent\Builder<App\User>::orWhere() expects array<int|model property of App\User, mixed>|(Closure(Illuminate\Database\Eloquent\Builder<App\User>): Illuminate\Database\Eloquent\Builder<App\User>)|(Closure(Illuminate\Database\Eloquent\Builder<App\User>): void)|Illuminate\Contracts\Database\Query\Expression|model property of App\User, \'foo\' given.'],
                 27 => ['Parameter #1 $column of method Illuminate\Database\Eloquent\Builder<App\User>::orWhere() expects array<int|model property of App\User, mixed>|(Closure(Illuminate\Database\Eloquent\Builder<App\User>): Illuminate\Database\Eloquent\Builder<App\User>)|(Closure(Illuminate\Database\Eloquent\Builder<App\User>): void)|Illuminate\Contracts\Database\Query\Expression|model property of App\User, array{foo: \'foo\'} given.'],
                 30 => ['Parameter #1 $column of method Illuminate\Database\Eloquent\Builder<App\User>::value() expects Illuminate\Contracts\Database\Query\Expression|model property of App\User, string given.'],
-                35 => ['Parameter #1 $columns of method Illuminate\Database\Eloquent\Builder<App\User>::first() expects array<int, model property of App\User>|model property of App\User, array<int, string> given.'],
-                36 => ['Parameter #1 $columns of method Illuminate\Database\Eloquent\Builder<App\User>::first() expects array<int, model property of App\User>|model property of App\User, string given.'],
+                35 => ['Parameter #1 $columns of method Illuminate\Database\Eloquent\Builder<App\User>::first() expects array<int, Illuminate\Contracts\Database\Query\Expression|model property of App\User>|Illuminate\Contracts\Database\Query\Expression|model property of App\User, array<int, string> given.'],
+                36 => ['Parameter #1 $columns of method Illuminate\Database\Eloquent\Builder<App\User>::first() expects array<int, Illuminate\Contracts\Database\Query\Expression|model property of App\User>|Illuminate\Contracts\Database\Query\Expression|model property of App\User, string given.'],
                 39 => ['Parameter #1 $column of method Illuminate\Database\Eloquent\Builder<App\User>::where() expects array<int|model property of App\User, mixed>|(Closure(Illuminate\Database\Eloquent\Builder<App\User>): Illuminate\Database\Eloquent\Builder<App\User>)|(Closure(Illuminate\Database\Eloquent\Builder<App\User>): void)|Illuminate\Contracts\Database\Query\Expression|model property of App\User, \'roles.foo\' given.'],
             ],
         ];
@@ -63,7 +65,7 @@ class IntegrationTest extends PHPStanTestCase
         yield [
             __DIR__ . '/data/model-property-model-factory.php',
             [
-                7 => ['Parameter #1 $attributes of method Illuminate\Database\Eloquent\Factories\Factory<App\User>::createOne() expects array<model property of App\User, mixed>, array<string, string> given.'],
+                7 => ['Parameter #1 $attributes of method Illuminate\Database\Eloquent\Factories\Factory<App\User>::createOne() expects array<model property of App\User, mixed>|(callable(array<string, mixed>): array<string, mixed>), array{foo: \'bar\'} given.'],
             ],
         ];
 
@@ -100,10 +102,11 @@ class IntegrationTest extends PHPStanTestCase
     }
 
     /**
-     * @param array<int, array<int, string>> $expectedErrors
+     * @param array<int, array<int, string>>|null $expectedErrors
      *
-     * @dataProvider dataIntegrationTests
+     * @throws Throwable
      */
+    #[DataProvider('dataIntegrationTests')]
     public function testIntegration(string $file, array|null $expectedErrors = null): void
     {
         $errors = $this->runAnalyse($file);
@@ -115,7 +118,7 @@ class IntegrationTest extends PHPStanTestCase
                 $this->assertNotEmpty($errors);
             }
 
-            $this->assertSameErrorMessages($expectedErrors, $errors);
+            $this->assertSameErrorMessages($file, $expectedErrors, $errors);
         }
     }
 
@@ -149,19 +152,23 @@ class IntegrationTest extends PHPStanTestCase
     }
 
     /**
-     *  @param array<int, array<int, string>> $expectedErrors
-     *  @param Error[]                        $errors
+     * @param array<int, array<int, string>> $expectedErrors
+     * @param Error[]                        $errors
      */
-    private function assertSameErrorMessages(array $expectedErrors, array $errors): void
+    private function assertSameErrorMessages(string $file, array $expectedErrors, array $errors): void
     {
         foreach ($errors as $error) {
             $errorLine = $error->getLine() ?? 0;
 
-            $this->assertArrayHasKey($errorLine, $expectedErrors);
+            $this->assertArrayHasKey(
+                $errorLine,
+                $expectedErrors,
+                sprintf('File %s has unexpected error "%s" at line %d.', $file, $error->getMessage(), $errorLine),
+            );
             $this->assertContains(
                 $error->getMessage(),
                 $expectedErrors[$errorLine],
-                sprintf("Unexpected error \"%s\" at line %d.\n\nExpected \"%s\"", $error->getMessage(), $errorLine, implode("\n\t", $expectedErrors[$errorLine])),
+                sprintf("File %s has unexpected error \"%s\" at line %d.\n\nExpected \"%s\"", $file, $error->getMessage(), $errorLine, implode("\n\t", $expectedErrors[$errorLine])),
             );
         }
     }
